@@ -1,3 +1,4 @@
+// https://github.com/nickuraltsev/finity/blob/b9511fd7ecee23899a9a6348e0a0f323074e5c12/src/configuration/BaseConfigurator.js#L3
 export default class BaseConfigurator {
   #parent: unknown;
 
@@ -5,7 +6,7 @@ export default class BaseConfigurator {
     this.#parent = parent;
   }
 
-  getAncestor(type: any) {
+  getAncestor(type: InstanceType<never>) {
     if (this.#parent) {
       return this.#parent instanceof type ? this.#parent : this.#parent;
     }
