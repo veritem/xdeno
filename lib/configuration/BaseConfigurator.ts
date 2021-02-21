@@ -1,10 +1,11 @@
 // deno-lint-ignore-file
 
 import mapValues from "../utils/mapValues.ts";
+import { configOpts } from "../types.ts";
 
 export default class BaseConfigurator {
   #parent: BaseConfigurator;
-  public config: Record<string, unknown> = {};
+  public config: configOpts = {};
 
   constructor(parent: BaseConfigurator) {
     this.#parent = parent;
