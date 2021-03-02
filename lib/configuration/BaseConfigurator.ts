@@ -27,6 +27,7 @@ export default class BaseConfigurator {
       if (!value) {
         return value;
       }
+
       if (value instanceof BaseConfigurator) {
         return value.buildConfig();
       }
