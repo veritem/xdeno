@@ -5,7 +5,6 @@ Deno.test("hello world #1", () => {
   assertEquals(x, 3);
 });
 
-// Fully fledged test definition, longer form, but configurable (see below)
 Deno.test({
   name: "hello world #2",
   fn: () => {
