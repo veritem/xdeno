@@ -1,4 +1,4 @@
-# X-Deno
+# xdeno
 
 [![CI](https://github.com/makuzaverite/X-Deno/actions/workflows/ci.yml/badge.svg)](https://github.com/makuzaverite/X-Deno/actions/workflows/ci.yml)
 
