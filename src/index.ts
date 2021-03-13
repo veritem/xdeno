@@ -1,0 +1,3 @@
+const xdeno = {};
+
+export { xdeno };

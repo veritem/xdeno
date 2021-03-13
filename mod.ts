@@ -1,1 +1,1 @@
-export default "./lib/Finity.ts";
+export { xdeno } from "./src/index.ts";
