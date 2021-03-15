@@ -5,6 +5,6 @@ interface InvokePrams {
   args: string[];
 }
 
-export default function invokeEach({ fn, ...args }: InvokePrams) {
+export function invokeEach({ fn, ...args }: InvokePrams) {
   fn.forEach((fn) => fn(args.args));
 }

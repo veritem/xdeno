@@ -11,3 +11,5 @@ export type StateHook = {
 };
 
 export type { InvokeEachParam, TaskParameter } from "./FunctionParameters.ts";
+export type { StateMachine } from "./Statemachine.ts";
+export type { Context } from "./context.ts";

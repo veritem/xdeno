@@ -1,5 +1,5 @@
 import { configOpts } from "../types/index.ts";
-export default function mapValues(
+export function mapValues(
   obj: configOpts,
   cb: (value: unknown) => unknown,
 ) {
