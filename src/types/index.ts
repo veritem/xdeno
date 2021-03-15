@@ -9,3 +9,5 @@ export interface configOpts {
 export type StateHook = {
   state: string;
 };
+
+export type { InvokeEachParam, TaskParameter } from "./FunctionParameters.ts";
