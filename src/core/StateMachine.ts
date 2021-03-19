@@ -1,19 +1,27 @@
+// deno-lint-ignore-file no-explicit-any
 import { merge } from "../utils/merge.ts";
 import { invokeEach } from "../utils/invokeEach.ts";
-import { Context } from "../types/index.ts";
+import {
+  configOpts,
+  Context,
+  StateMachineConfigurator,
+} from "../types/index.ts";
+import { TaskScheduler } from "./TaskScheduler.ts";
 
 export default class StateMachine<S, E> {
-  #config: any;
-  #taskSchedular: any;
+  #config: StateMachineConfigurator<S, E> | null;
+  #taskSchedular: TaskScheduler;
   #contextFactory: Context<S, E>;
   #currentState: S | null;
-  #submachines: any;
-  #timerIDs: any;
+  #submachines: Record<string, null>;
+  #timerIDs: ReturnType<typeof setTimeout>[] | null;
   #asyncActionCancelers: any;
 
-  //https://github.com/nickuraltsev/finity/blob/b9511fd7ecee23899a9a6348e0a0f323074e5c12/src/core/StateMachine.js#L7
-
-  constructor(config: any, contextFactory: Context<S, E>) {
+  constructor(
+    config: StateMachineConfigurator<S, E>,
+    taskSchedular: TaskScheduler,
+    contextFactory: Context<S, E>,
+  ) {
     if (config === undefined || config === null) {
       throw new Error("Configuration must be specified.");
     }
@@ -26,42 +34,56 @@ export default class StateMachine<S, E> {
     }
 
     this.#config = config;
-    // this.#taskSchedular = taskSchedular;
+    this.#taskSchedular = taskSchedular;
     this.#contextFactory = contextFactory;
     this.#submachines = Object.create(null);
     this.#timerIDs = null;
     this.#currentState = null;
     this.#asyncActionCancelers = null;
-    // this.handleAsyncActionComplete = ::this.handleAsyncActionComplete;
-    // this.handleTimeout = ::this.handleTimeout;
+    this.handleAsyncActionComplete();
+    this.handleTimeout();
   }
 
   getCurrentState(): S | null {
     return this.#currentState;
   }
 
-  //TODO:
   canHandle(event: E, eventPayload?: any): boolean {
     if (!this.isStarted) {
       return false;
     }
 
     const context = this.createContextWithEvent(event, eventPayload);
-    // return !!this.getFirstAllowedTransitionForEvent(context);
+    return !!this.getFirstAllowedTransitionForEvent(context);
+  }
+
+  tryHandle(event: E, eventPayload: any) {
+    if (!this.isStarted()) {
+      return false;
+    }
+
+    const context = this.createContextWithEvent(event, eventPayload);
+    const transitionConfig = this.getFirstAllowedTransitionForEvent(context);
+    if (transitionConfig) {
+      this.executeTransition(transitionConfig, context);
+      return false;
+    }
     return false;
   }
 
   //TODO:
-  tryHandle() {}
-
-  //TODO:
   handleUnhandledEvent() {}
 
-  //TODO:
-  isStarted() {}
+  isStarted() {
+    return this.#currentState !== null;
+  }
 
   //TODO:
-  start() {}
+  start() {
+    if (!this.isStarted()) {
+      this.enterState(this.#config.initialState, this.createContext());
+    }
+  }
 
   //TODO:
   stop() {}
@@ -70,13 +92,33 @@ export default class StateMachine<S, E> {
   getSubMachine() {}
 
   //TODO:
-  executeTransition() {}
+  executeTransition<S, E>(transitionConfig: any, context: Context<S, E>) {
+    if (transitionConfig.ignore) {
+      return;
+    }
+
+    if (!transitionConfig.isInternal) {
+      this.exitState(context);
+    }
+  }
 
   //TODO:
-  enterState() {}
+  enterState<S, E>(state: S, context: Context<S, E>) {
+  }
 
   //TODO:
-  exitState() {}
+  exitState<S, E>(context: Context<S, E>) {
+    this.stopSubmachines();
+    this.stopTimers();
+    this.cancelAsyncAction();
+
+    // invokeEach(this.config.global.stateExitHooks, this.#currentState, context);
+
+    // const stateConfig = this.config.states[this.currentState];
+    // if (stateConfig) {
+    //   invokeEach(stateConfig.exitActions, this.currentState, context);
+    // }
+  }
 
   //TODO:
   startAsyncAction() {}
@@ -90,45 +132,53 @@ export default class StateMachine<S, E> {
   //TODO:
   startTimers() {}
 
-  //TODO:
-  stopTimers() {}
+  stopTimers() {
+    if (this.#timerIDs) {
+      this.#timerIDs.forEach(clearTimeout);
+    }
+  }
 
   //TODO:
   handleTimeout() {}
 
-  //TODO:
-  stopSubmachines() {}
+  stopSubmachines() {
+    //TODO:
+    //Start from Here
+    // const sumMachines = this.#submachines.this.#currentState];
+  }
 
   //TODO:
-  static getFirstAllowedTransition() {}
+  static getFirstAllowedTransition<E, S>(
+    transitions: any[],
+    context: Context<E, S>,
+  ) {
+    for (let i = 0; i < transitions.length; i++) {
+      if (!transitions[i].condition || transitions[i].condition(context)) {
+        return transitions;
+      }
+    }
+    return null;
+  }
 
-  //TODO:
-  // getFirstAllowedTransition(transition: any[], context: Context<E, S>): any {
-  //   for (let i = 0; i < transitions.length; i++) {
-  //     if (!transitions[i].condition || transitions[i].condition(context)) {
-  //       return transitions[i];
-  //     }
-  //   }
-  //   return null;
-  // }
+  getFirstAllowedTransitionForEvent<E, S>(context: Context<E, S>) {
+    const stateConfig = this.#config.states[this.#currentState];
+    if (!stateConfig) {
+      return null;
+    }
 
-  // getFirstAllowedTransitionForEvent(context: Context<E, S>) {
-  //   const stateConfig = this.#config.states[this.#currentState];
-  //   if (!stateConfig) {
-  //     return null;
-  //   }
+    let transitionConfig = null;
 
-  //   let transitionConfig = null;
+    const eventConfig = stateConfig.events[context.event];
 
-  //   const eventConfig = stateConfig.events[context.event];
+    if (!transitionConfig && stateConfig.anyEventTrigger) {
+      transitionConfig = StateMachine.getFirstAllowedTransition(
+        stateConfig.anyEventTrigger.transitions,
+        context,
+      );
+    }
 
-  //   if (eventConfig) {
-  //     transitionConfig = StateMachine.getFirstAllowedTransition(
-  //       eventConfig.transitions,
-  //       context,
-  //     );
-  //   }
-  // }
+    return transitionConfig;
+  }
 
   //TODO:
   executeTrigger() {}
