@@ -5,6 +5,7 @@ import {
   configOpts,
   Context,
   StateMachineConfigurator,
+  TriggerConfigurator,
 } from "../types/index.ts";
 import { TaskScheduler } from "./TaskScheduler.ts";
 
@@ -12,8 +13,8 @@ export default class StateMachine<S, E> {
   #config: StateMachineConfigurator<S, E> | null;
   #taskSchedular: TaskScheduler;
   #contextFactory: Context<S, E>;
-  #currentState: S | null;
-  #submachines: Record<string, null>;
+  #currentState: S | any;
+  #submachines: StateMachine<S, E>[];
   #timerIDs: ReturnType<typeof setTimeout>[] | null;
   #asyncActionCancelers: any;
 
@@ -97,21 +98,32 @@ export default class StateMachine<S, E> {
     }
   }
 
-  //TODO:
-  stop() {}
+  stop() {
+    if (this.isStarted()) {
+      this.exitState(this.createContext());
+      this.#currentState = null;
+    }
+  }
 
   //TODO:
-  getSubMachine() {}
+  getSubMachine() {
+    return this.isStarted() ? this.#submachines[this.#currentState] : null;
+  }
 
   //TODO:
-  executeTransition<S, E>(transitionConfig: any, context: Context<S, E>) {
+  executeTransition<S, E>(
+    transitionConfig: TriggerConfigurator,
+    context: Context<S, E>,
+  ) {
     if (transitionConfig.ignore) {
       return;
     }
 
-    if (!transitionConfig.isInternal) {
+    if (!transitionConfig.internal) {
       this.exitState(context);
     }
+
+    // if(transitionConfig.in)
   }
 
   //TODO:
