@@ -72,13 +72,25 @@ export default class StateMachine<S, E> {
   }
 
   //TODO:
-  handleUnhandledEvent() {}
+  handleUnhandledEvent(event: Event, eventPayload: any) {
+    if (this.#config.global.unhandledEventHooks.length > 0) {
+      // invokeEach(
+      //   this.#config.global.unhandledEventHooks,
+      //   event,
+      //   this.#currentState,
+      //   this.createContextWithEvent(event, eventPayload),
+      // );
+    } else {
+      throw new Error(
+        `Unhandled event ${event} in state '${this.#currentState}'`,
+      );
+    }
+  }
 
   isStarted() {
     return this.#currentState !== null;
   }
 
-  //TODO:
   start() {
     if (!this.isStarted()) {
       this.enterState(this.#config.initialState, this.createContext());
