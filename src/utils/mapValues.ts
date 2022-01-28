@@ -1,7 +1,8 @@
-import { configOpts } from "../types/index.ts";
-export function mapValues(
-  obj: configOpts,
-  cb: (value: unknown) => unknown,
-) {
-  let result: Record<string, unknown>;
+export default function mapValues(obj, callback) {
+  const prototype = Object.getPrototypeOf(obj);
+  const result = Object.create(prototype);
+  Object.keys(obj).forEach((key) => {
+    result[key] = callback(obj[key]);
+  });
+  return result;
 }
